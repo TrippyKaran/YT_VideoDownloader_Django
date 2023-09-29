@@ -64,6 +64,45 @@ def download_audio(request):
 #         return JsonResponse({'error': 'Invalid request method'})
 
 
+# @csrf_exempt
+# def download_video(request):
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body.decode('utf-8'))
+#             link = data.get('link')
+#             youtube_object = YouTube(link)
+#             video_streams = youtube_object.streams
+
+#              # Print information about all video streams
+#             for stream in video_streams:
+#                print(stream)
+
+#             # Sort streams by resolution in descending order
+#             video_streams = sorted([stream for stream in video_streams if stream.is_progressive], key=lambda x: (int(x.resolution[:-1]), x.resolution), reverse=True)
+
+#             if video_streams:
+#                 video_stream = video_streams[0]
+#             else:
+#                 return JsonResponse({'error': 'No progressive streams available'})
+
+#             print(" Available Resolutions:", [stream.resolution for stream in video_streams])
+#             print(" Download Resolution:", video_stream.resolution)
+
+#             download_path = "D:\\Downloads"
+
+#             video_stream.download(output_path=download_path)
+
+#             video_url = f"/downloaded-files/{video_stream.title}.mp4"
+
+#             return JsonResponse({'message': 'Video download completed successfully', 'url': video_url, 'video_title': video_stream.title})
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)})
+#     else:
+#         return JsonResponse({'error': 'Invalid request method'})
+
+
+
+
 @csrf_exempt
 def download_video(request):
     if request.method == 'POST':
@@ -72,10 +111,6 @@ def download_video(request):
             link = data.get('link')
             youtube_object = YouTube(link)
             video_streams = youtube_object.streams
-
-             # Print information about all video streams
-            for stream in video_streams:
-               print(stream)
 
             # Sort streams by resolution in descending order
             video_streams = sorted([stream for stream in video_streams if stream.is_progressive], key=lambda x: (int(x.resolution[:-1]), x.resolution), reverse=True)
@@ -88,11 +123,21 @@ def download_video(request):
             print(" Available Resolutions:", [stream.resolution for stream in video_streams])
             print(" Download Resolution:", video_stream.resolution)
 
-            download_path = "D:\\Downloads"
+            # Get the current user's username
+            current_user = os.getlogin()
+
+            # Construct download paths using the username
+            download_path_c = f"C:\\Users\\{current_user}\\Downloads"
+            download_path_desktop = os.path.join(os.path.expanduser("~"), "Desktop")
+
+            if os.path.exists(download_path_c):
+                download_path = download_path_c
+            else:
+                download_path = download_path_desktop
 
             video_stream.download(output_path=download_path)
 
-            video_url = f"/downloaded-files/{video_stream.title}.mp4"
+            video_url = os.path.join(download_path, f"{video_stream.title}.mp4")
 
             return JsonResponse({'message': 'Video download completed successfully', 'url': video_url, 'video_title': video_stream.title})
         except Exception as e:
