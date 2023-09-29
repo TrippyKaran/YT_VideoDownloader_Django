@@ -24,8 +24,85 @@ def download_audio(request):
             return JsonResponse({'message': 'Audio download completed successfully', 'url': audio_url, 'audio_title':audio_stream.title})        
         except Exception as e: 
             return JsonResponse({'error': str(e)})
-   
-      
+
+
+
+# @csrf_exempt
+# def download_video(request):
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body.decode('utf-8'))
+#             link = data.get('link')
+#             youtube_object = YouTube(link)
+#             video_streams = youtube_object.streams
+
+#             # Filter 1080p progressive streams
+#             high_res_progressive_streams = [stream for stream in video_streams if stream.resolution and int(stream.resolution[:-1]) == 1080 and stream.is_progressive]
+
+#             if high_res_progressive_streams:
+#                 # Select the first available 1080p progressive stream
+#                 video_stream = high_res_progressive_streams[0]
+#             else:
+#                 # If no 1080p progressive streams are available, choose the highest available progressive stream below 1080p
+#                 progressive_streams = [stream for stream in video_streams if stream.is_progressive and stream.resolution]
+#                 progressive_streams.sort(key=lambda x: int(x.resolution[:-1]), reverse=True)
+#                 video_stream = progressive_streams[0]
+
+#             print(" Available Resolutions:", [stream.resolution for stream in video_streams])
+#             print(" Download Resolution:", video_stream.resolution)
+
+#             download_path = "D:\\Downloads"
+
+#             video_stream.download(output_path=download_path)
+
+#             video_url = f"/downloaded-files/{video_stream.title}.mp4"
+
+#             return JsonResponse({'message': 'Video download completed successfully', 'url': video_url, 'video_title': video_stream.title})
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)})
+#     else:
+#         return JsonResponse({'error': 'Invalid request method'})
+
+
+# @csrf_exempt
+# def download_video(request):
+#     if request.method == 'POST':
+#         try:
+#             data = json.loads(request.body.decode('utf-8'))
+#             link = data.get('link')
+#             youtube_object = YouTube(link)
+#             video_streams = youtube_object.streams
+
+#              # Print information about all video streams
+#             for stream in video_streams:
+#                print(stream)
+
+#             # Sort streams by resolution in descending order
+#             video_streams = sorted([stream for stream in video_streams if stream.is_progressive], key=lambda x: (int(x.resolution[:-1]), x.resolution), reverse=True)
+
+#             if video_streams:
+#                 video_stream = video_streams[0]
+#             else:
+#                 return JsonResponse({'error': 'No progressive streams available'})
+
+#             print(" Available Resolutions:", [stream.resolution for stream in video_streams])
+#             print(" Download Resolution:", video_stream.resolution)
+
+#             download_path = "D:\\Downloads"
+
+#             video_stream.download(output_path=download_path)
+
+#             video_url = f"/downloaded-files/{video_stream.title}.mp4"
+
+#             return JsonResponse({'message': 'Video download completed successfully', 'url': video_url, 'video_title': video_stream.title})
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)})
+#     else:
+#         return JsonResponse({'error': 'Invalid request method'})
+
+
+
+
 @csrf_exempt
 def download_video(request):
     if request.method == 'POST':
@@ -35,27 +112,35 @@ def download_video(request):
             youtube_object = YouTube(link)
             video_streams = youtube_object.streams
 
+            # Sort streams by resolution in descending order
+            video_streams = sorted([stream for stream in video_streams if stream.is_progressive], key=lambda x: (int(x.resolution[:-1]), x.resolution), reverse=True)
 
-            resolutions = list([int(stream.resolution[:-1]) for stream in video_streams if stream.resolution])
-            highest_resolution_index = resolutions.index(max(resolutions))
-            
-            video_stream = youtube_object.streams[highest_resolution_index]
+            if video_streams:
+                video_stream = video_streams[0]
+            else:
+                return JsonResponse({'error': 'No progressive streams available'})
 
+            print(" Available Resolutions:", [stream.resolution for stream in video_streams])
+            print(" Download Resolution:", video_stream.resolution)
 
-            print(" Available Resolutions:", resolutions)
-            print(" Highest Resolutions:", highest_resolution_index)
-            print(" Download Resolution:", youtube_object.streams[highest_resolution_index])
+            # Get the current user's username
+            current_user = os.getlogin()
 
+            # Construct download paths using the username
+            download_path_c = f"C:\\Users\\{current_user}\\Downloads"
+            download_path_desktop = os.path.join(os.path.expanduser("~"), "Desktop")
 
-            download_path = "D:\\Downloads"
+            if os.path.exists(download_path_c):
+                download_path = download_path_c
+            else:
+                download_path = download_path_desktop
 
             video_stream.download(output_path=download_path)
 
-            video_url = f"/downloaded-files/{video_stream.title}.mp4"
+            video_url = os.path.join(download_path, f"{video_stream.title}.mp4")
 
-            return JsonResponse({'message': 'Video download completed successfully', 'url':video_url, 'video_title':video_stream.title})
+            return JsonResponse({'message': 'Video download completed successfully', 'url': video_url, 'video_title': video_stream.title})
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Invalid request method'})
-    
