@@ -1,4 +1,5 @@
-from django.http import JsonResponse, FileResponse
+import mimetypes
+from django.http import JsonResponse, FileResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from pytube import YouTube
 import json
@@ -11,25 +12,24 @@ def download_audio(request):
     try:
         data = json.loads(request.body.decode("utf-8"))
         link = data.get("link")
-        youtube_object = YouTube(link)
-        audio_stream = youtube_object.streams.filter(only_audio=True).first()
+        yt = YouTube(link)
+        audio_stream = yt.streams.filter(only_audio=True).first()
 
-        download_path = "D:\\Downloads"
-        audio_path = os.path.join(download_path, audio_stream.title + ".mp3")
+        audio_filename = clean_filename(yt.title) + "_audio.mp3"
+        audio_stream.download(filename=audio_filename)
 
-        audio_stream.download(output_path=download_path)
+        with open(audio_filename, "rb") as audio_file:
+            response = HttpResponse(
+                audio_file.read(), content_type=mimetypes.guess_type(audio_filename)[0]
+            )
+            response["Content-Disposition"] = f'attachment; filename="{audio_filename}"'
 
-        audio_url = f"/downloaded-files/{audio_stream.title}.mp3"
-
-        return JsonResponse(
-            {
-                "message": "Audio download completed successfully",
-                "url": audio_url,
-                "audio_title": audio_stream.title,
-            }
-        )
+        return response
     except Exception as e:
         return JsonResponse({"error": str(e)})
+    finally:
+        print("All resources closed :  ", audio_filename)
+        os.remove(audio_filename)
 
 
 @csrf_exempt
@@ -41,23 +41,29 @@ def download_video(request):
             link = data.get("link")
 
             print("Function call krr rha hu")
-            result = download_video_file(link, "HD")
+            result = download_video_file(link, "FHD")
             print("download ho gya")
-
-            print("Final Video Url : ", result.get("video_url"))
 
             # Prepare the video file response
             video_path = result.get("video_url")
-            video_file = open(video_path, "rb")
-            response = FileResponse(video_file, content_type="video/mp4")
-            response[
-                "Content-Disposition"
-            ] = f'attachment; filename="{result.get("video_title")}.mp4"'
+            video_title = result.get("video_title")
+
+            with open(video_path, "rb") as video_file:
+                response = HttpResponse(
+                    video_file.read(), content_type=mimetypes.guess_type(video_path)[0]
+                )
+
+                response["Content-Disposition"] = f'attachment; filename="{video_file}"'
 
             return response
 
         except Exception as e:
             return JsonResponse({"error": str(e)})
+
+        finally:
+            print("All resouces closed : ", video_path)
+            os.remove(video_path)
+
     else:
         return JsonResponse({"error": "Invalid request method"})
 
@@ -83,18 +89,6 @@ def download_video_file(link, res_level):
         dynamic_streams = ["480p"]
         print("SD")
 
-    # Get the current user's username
-    current_user = os.getlogin()
-
-    # Construct download paths using the username
-    download_path_c = f"C:\\Users\\{current_user}\\Downloads"
-    download_path_desktop = os.path.join(os.path.expanduser("~"), "Desktop")
-
-    if os.path.exists(download_path_c):
-        download_path = download_path_c
-    else:
-        download_path = download_path_desktop
-
     for ds in dynamic_streams:
         print("Selected Stream : ", ds)
         try:
@@ -109,9 +103,9 @@ def download_video_file(link, res_level):
                         res=ds, file_extension="mp4", progressive=False
                     ).first()
 
-                    audio_stream = yt.streams.filter(
-                        only_audio=True, file_extension="webm"
-                    ).first()
+                audio_stream = yt.streams.filter(
+                    only_audio=True, file_extension="webm"
+                ).first()
 
                 if video_stream and audio_stream:
                     video_filename = clean_filename(yt.title) + "_video.mp4"
@@ -121,8 +115,8 @@ def download_video_file(link, res_level):
                     video_stream.download(filename=video_filename)
                     audio_stream.download(filename=audio_filename)
 
-                    audio_path = os.path.join("", audio_filename)
-                    video_path = os.path.join("", video_filename)
+                    audio_path = audio_filename
+                    video_path = video_filename
 
                     # Create instances of VideoFileClip and AudioFileClip
                     video_clip = VideoFileClip(video_path)
@@ -131,9 +125,7 @@ def download_video_file(link, res_level):
                     video_clip_with_audio = video_clip.set_audio(audio_clip)
 
                     # Output filename for merged video
-                    merged_filename = os.path.join(
-                        "", clean_filename(yt.title) + "_merged.mp4"
-                    )
+                    merged_filename = clean_filename(yt.title) + "_merged.mp4"
 
                     # Write the merged video file
                     video_clip_with_audio.write_videofile(merged_filename)
