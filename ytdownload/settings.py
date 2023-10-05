@@ -23,7 +23,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
-    "Ytdownload",
+    "ytdownload",
 ]
 
 MIDDLEWARE = [
@@ -37,7 +37,7 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
 ]
 
-ROOT_URLCONF = "Ytdownload.urls"
+ROOT_URLCONF = "ytdownload.urls"
 
 TEMPLATES = [
     {
@@ -55,7 +55,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "Ytdownload.wsgi.application"
+WSGI_APPLICATION = "ytdownload.wsgi.application"
 
 
 DATABASES = {
