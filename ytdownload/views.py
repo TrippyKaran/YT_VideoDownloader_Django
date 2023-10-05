@@ -7,6 +7,11 @@ import os
 from moviepy.editor import *
 
 
+video_path = None
+
+def index(request):
+    return HttpResponse("Hello, world! This is the default route.")
+
 @csrf_exempt
 def download_audio(request):
     try:
@@ -32,21 +37,21 @@ def download_audio(request):
         os.remove(audio_filename)
 
 
+# Download 4K video
 @csrf_exempt
-def download_video(request):
+def download_video_4k(request):
+    print("Requested for : 4K")
+
     if request.method == "POST":
         try:
             data = json.loads(request.body.decode("utf-8"))
-            print("Link Mil Gya")
             link = data.get("link")
 
-            print("Function call krr rha hu")
-            result = download_video_file(link, "FHD")
-            print("download ho gya")
+            result = download_video_file(link, "4K")
+            print(result)
 
             # Prepare the video file response
             video_path = result.get("video_url")
-            video_title = result.get("video_title")
 
             with open(video_path, "rb") as video_file:
                 response = HttpResponse(
@@ -61,8 +66,81 @@ def download_video(request):
             return JsonResponse({"error": str(e)})
 
         finally:
-            print("All resouces closed : ", video_path)
-            os.remove(video_path)
+            if video_path is not None:
+                print("All resources closed:", video_path)
+                os.remove(video_path)
+
+    else:
+        return JsonResponse({"error": "Invalid request method"})
+
+
+# Download 1080p video
+@csrf_exempt
+def download_video_fhd(request):
+    print("Requested for : FHD")
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            link = data.get("link")
+
+            result = download_video_file(link, "FHD")
+
+            # Prepare the video file response
+            video_path = result.get("video_url")
+
+            with open(video_path, "rb") as video_file:
+                response = HttpResponse(
+                    video_file.read(), content_type=mimetypes.guess_type(video_path)[0]
+                )
+
+                response["Content-Disposition"] = f'attachment; filename="{video_file}"'
+
+            return response
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)})
+
+        finally:
+            if video_path is not None:
+                print("All resources closed:", video_path)
+                os.remove(video_path)
+
+    else:
+        return JsonResponse({"error": "Invalid request method"})
+
+
+# Download 720p video
+@csrf_exempt
+def download_video_hd(request):
+    print("Requested for : HD")
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+            link = data.get("link")
+
+            result = download_video_file(link, "HD")
+
+            # Prepare the video file response
+            video_path = result.get("video_url")
+
+            with open(video_path, "rb") as video_file:
+                response = HttpResponse(
+                    video_file.read(), content_type=mimetypes.guess_type(video_path)[0]
+                )
+
+                response["Content-Disposition"] = f'attachment; filename="{video_file}"'
+
+            return response
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)})
+
+        finally:
+            if video_path is not None:
+                print("All resources closed:", video_path)
+                os.remove(video_path)
 
     else:
         return JsonResponse({"error": "Invalid request method"})
@@ -71,10 +149,6 @@ def download_video(request):
 def download_video_file(link, res_level):
     yt = YouTube(link)
     result = {}
-
-    print("All Streams : ")
-    for stream in yt.streams:
-        print(stream)
 
     if res_level == "4K":
         dynamic_streams = ["2160p"]
@@ -141,10 +215,15 @@ def download_video_file(link, res_level):
                     break
 
             else:
-                print("720p")
-                video_stream = yt.streams.filter(
-                    res="720p", file_extension="mp4", progressive=True
-                ).first()
+                if res_level == "HD":
+                    video_stream = yt.streams.filter(
+                        res="720p", file_extension="mp4", progressive=True
+                    ).first()
+
+                else:
+                    video_stream = yt.streams.filter(
+                        res=ds, file_extension="mp4", progressive=True
+                    ).first()
 
                 video_filename = clean_filename(yt.title) + "_video.mp4"
                 video_stream.download(filename=video_filename)
