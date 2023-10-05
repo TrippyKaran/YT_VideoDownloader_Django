@@ -9,6 +9,8 @@ from moviepy.editor import *
 
 video_path = None
 
+def index(request):
+    return HttpResponse("Hello, world! This is the default route.")
 
 @csrf_exempt
 def download_audio(request):
